@@ -122,7 +122,10 @@ namespace cakeslice.SimpleWebRTC
 				if (candidate.Protocol != RTCIceProtocol.Udp)
 					return;
 
-				iceCandidates.Add(candidate);
+				lock (iceCandidates)
+				{
+					iceCandidates.Add(candidate);
+				}
 			};
 
 			this.unreliableDataChannel = client.CreateDataChannel("Unreliable", new RTCDataChannelInit()

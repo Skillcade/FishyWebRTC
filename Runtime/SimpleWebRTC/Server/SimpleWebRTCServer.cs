@@ -52,7 +52,7 @@ namespace cakeslice.SimpleWebRTC
 			}
 		}
 
-		public void SendAll(List<int> connectionIds, ArraySegment<byte> source, Common.DeliveryMethod dm)
+		public void SendAll(ICollection<int> connectionIds, ArraySegment<byte> source, Common.DeliveryMethod dm)
 		{
 			ArrayBuffer buffer = bufferPool.Take(source.Count);
 			buffer.CopyFrom(source);

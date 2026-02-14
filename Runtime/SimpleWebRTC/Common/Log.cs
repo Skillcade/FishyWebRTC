@@ -21,6 +21,7 @@ namespace cakeslice.SimpleWebRTC
 			return BitConverter.ToString(buffer, offset, length ?? buffer.Length);
 		}
 
+		[System.Diagnostics.Conditional("DEBUG")]
 		public static void DumpBuffer(string label, byte[] buffer, int offset, int length)
 		{
 			if (level < Levels.verbose)
@@ -29,6 +30,7 @@ namespace cakeslice.SimpleWebRTC
 			Debug.Log($"SimpleWebRTC Verbose: {label}: {BufferToString(buffer, offset, length)}");
 		}
 
+		[System.Diagnostics.Conditional("DEBUG")]
 		public static void DumpBuffer(string label, ArrayBuffer arrayBuffer)
 		{
 			if (level < Levels.verbose)

@@ -52,6 +52,9 @@ namespace cakeslice.SimpleWebRTC
 
 			// create write buffer for this thread
 			byte[] writeBuffer = new byte[bufferSize];
+			GCHandle pinned = GCHandle.Alloc(writeBuffer, GCHandleType.Pinned);
+			IntPtr pointer = pinned.AddrOfPinnedObject();
+			
 			try
 			{
 				RTCPeerConnection client = conn.client;
@@ -65,11 +68,6 @@ namespace cakeslice.SimpleWebRTC
 				{
 					// wait for message
 					sendPending.Wait();
-					// wait for 1ms for mirror to send other messages
-					if (SendLoopConfig.sleepBeforeSend)
-					{
-						Thread.Sleep(1);
-					}
 					sendPending.Reset();
 
 					if (stream.ReadyState == RTCDataChannelState.Open)
@@ -81,15 +79,20 @@ namespace cakeslice.SimpleWebRTC
 							{
 								Log.Info($"SendLoop {conn} not connected"); return;
 							}
+							
+							// P0 Item 6: Backpressure / Congestion Control
+							// If unreliable channel is backed up, drop the packet to let TCP/SCTP recover
+							if (dm == Common.DeliveryMethod.Unreliable && stream.BufferedAmount > 65536) 
+							{
+								msg.Release();
+								continue;
+							}
 
 							int length = SendMessage(writeBuffer, 0, msg);
 
-							GCHandle pinned = GCHandle.Alloc(writeBuffer, GCHandleType.Pinned);
-							IntPtr pointer = pinned.AddrOfPinnedObject();
-
+							// P0 Item 1: Zero-copy/Pin-once optimization
+							// Buffer is already pinned outside the loop
 							stream.Send(pointer, length);
-
-							pinned.Free();
 
 							msg.Release();
 						}
@@ -112,6 +115,11 @@ namespace cakeslice.SimpleWebRTC
 			{
 				dispose = true;
 				Log.Exception(e);
+			}
+			finally
+			{
+				if (pinned.IsAllocated)
+					pinned.Free();
 			}
 
 			if (dispose)

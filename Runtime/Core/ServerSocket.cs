@@ -64,7 +64,7 @@ namespace FishNet.Transporting.FishyWebRTC.Server
 		/// <summary>
 		/// Currently connected clients.
 		/// </summary>
-		private List<int> _clients = new List<int>();
+		private HashSet<int> _clients = new HashSet<int>();
 		/// <summary>
 		/// Server socket manager.
 		/// </summary>

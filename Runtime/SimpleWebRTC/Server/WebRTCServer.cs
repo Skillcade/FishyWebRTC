@@ -301,19 +301,31 @@ namespace cakeslice.SimpleWebRTC
                         conn.client.AddIceCandidate(new RTCIceCandidate(i));
                     }
 
-                    // Wait one second to gather candidates
-                    Thread.Sleep(1000);
-
-                    if (conn.iceCandidates.Count == 0)
-                        Log.Error("No ICE candidates available to send");
+                    // Poll for ICE candidates — proceed as soon as we have some, up to 1s max
+                    int waited = 0;
+                    while (waited < 1000)
+                    {
+                        lock (conn.iceCandidates)
+                        {
+                            if (conn.iceCandidates.Count > 0)
+                                break;
+                        }
+                        Thread.Sleep(50);
+                        waited += 50;
+                    }
 
                     string output = "{\n" + "\"candidates\": [";
 
-                    for (int i = 0; i < conn.iceCandidates.Count; i++)
+                    lock (conn.iceCandidates)
                     {
-                        string c = conn.iceCandidates[i].Candidate;
+                        if (conn.iceCandidates.Count == 0)
+                            Log.Error("No ICE candidates available to send after " + waited + "ms");
 
-                        output += "\"" + c + (i != conn.iceCandidates.Count - 1 ? "\"," : "\"");
+                        for (int i = 0; i < conn.iceCandidates.Count; i++)
+                        {
+                            string c = conn.iceCandidates[i].Candidate;
+                            output += "\"" + c + (i != conn.iceCandidates.Count - 1 ? "\"," : "\"");
+                        }
                     }
 
                     output += "]\n}";
