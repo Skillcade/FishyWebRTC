@@ -11,6 +11,7 @@ This repository is a production-hardened fork of [cakeslice/FishyWebRTC](https:/
 - **FishNet v4 Compatibility**: Updated to work with FishNet 4.6.19R+ (January 2026), resolving previous logging and API incompatibilities.
 - **Zero-Config UPM**: Packaged for Unity Package Manager (UPM) with `versionDefines`, automatically configuring the `ENABLE_WEBRTC` symbol when dependencies are met.
 - **Enhanced Configuration**: Added runtime API for configuring HTTPS and signaling ports, essential for dynamic cloud deployments.
+- **Production HTTPS Support**: New "Suppress CORS Headers" toggle prevents duplicate CORS headers when running behind a reverse proxy (Edgegap TLS Upgrade), fixing HTTPS WebGL connection failures.
 
 ## Prerequisites
 
@@ -47,15 +48,22 @@ This repository is a production-hardened fork of [cakeslice/FishyWebRTC](https:/
 2. Configure ICE servers (STUN/TURN) in the Inspector
 3. Set signaling address and port
 
-### Edgegap Runtime Configuration
+### Edgegap Production Configuration
 
-For Edgegap, configure at runtime before `StartConnection()`:
+Two settings are required for WebGL builds served over HTTPS (production):
+
+**Inspector (Server component):**
+- Enable **Suppress CORS Headers** — Edgegap's TLS proxy already adds CORS headers. If the server also sets them, browsers reject the response. This toggle disables the server-side headers so the proxy owns them.
+
+**Runtime (Client, before `StartConnection()`):**
 ```csharp
 var transport = GetComponent<FishyWebRTC>();
-transport.SetHTTPS(true);
-transport.SetNoClientPort(true);
+transport.SetHTTPS(true);          // Use HTTPS for signaling
+transport.SetNoClientPort(true);   // Port 443 is implied, omit from URL
 transport.SetClientAddress("your-server.edgegap.net");
 ```
+
+> Without **Suppress CORS Headers** on the server, HTTPS WebGL builds will fail at the signaling step even if everything else is correct.
 
 ## Docker Testing Scenarios
 
